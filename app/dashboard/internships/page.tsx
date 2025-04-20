@@ -11,20 +11,27 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
 import InternshipService from "@/services/internship-service"
-import Link from "next/link"
 
 interface Internship {
   id: number
   title: string
   company: string
   location: string
-  duration: string
+  duration_weeks: string
   posted_date: string
   deadline: string
   skills_required: string[]
   description: string
   teacher_id: number
-  teacher_name: string
+  teacher:{
+   
+      id: number
+      
+      first_name:string
+      last_name:string
+    
+      
+  }
 }
 
 export default function InternshipsPage() {
@@ -36,6 +43,14 @@ export default function InternshipsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const { toast } = useToast()
 
+
+  useEffect(() => {
+    const ids = filteredInternships.map((i) => i.id)
+    const duplicates = ids.filter((id, index) => ids.indexOf(id) !== index)
+    if (duplicates.length > 0) {
+      console.warn("Duplicate internship IDs in render:", duplicates)
+    }
+  }, [filteredInternships])
   // Fetch internships from API
   useEffect(() => {
     const fetchInternships = async () => {
@@ -64,34 +79,23 @@ export default function InternshipsPage() {
 
   // Filter internships based on search term, skills, and duration
   useEffect(() => {
-    let filtered = internships
-
-    // Filter by search term
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (internship) =>
-          internship.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          internship.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          internship.description.toLowerCase().includes(searchTerm.toLowerCase()),
-      )
+    const fetchFilteredInternships = async () => {
+      try {
+        const data = await InternshipService.getInternships({
+          limit: 50,
+          skip: 0,
+          search: searchTerm,
+          skills: selectedSkills,
+        })
+        setFilteredInternships(data)
+      } catch (error) {
+        console.error("Error fetching filtered internships:", error)
+      }
     }
-
-    // Filter by skills
-    if (selectedSkills.length > 0) {
-      filtered = filtered.filter((internship) =>
-        selectedSkills.every((skill) =>
-          internship.skills_required.some((s) => s.toLowerCase() === skill.toLowerCase()),
-        ),
-      )
-    }
-
-    // Filter by duration
-    if (selectedDuration && selectedDuration !== "all") {
-      filtered = filtered.filter((internship) => internship.duration.includes(selectedDuration))
-    }
-
-    setFilteredInternships(filtered)
-  }, [searchTerm, selectedSkills, selectedDuration, internships])
+  
+    fetchFilteredInternships()
+  }, [searchTerm, selectedSkills ,])
+  
 
   const handleSkillToggle = (skill: string) => {
     setSelectedSkills((prev) => (prev.includes(skill) ? prev.filter((s) => s !== skill) : [...prev, skill]))
@@ -159,7 +163,7 @@ export default function InternshipsPage() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
-                <h3 className="font-medium">Duration</h3>
+                <h3 className="font-medium">Duration </h3>
                 <Select onValueChange={setSelectedDuration} value={selectedDuration}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select duration" />
@@ -225,7 +229,7 @@ export default function InternshipsPage() {
                       <CardTitle>{internship.title}</CardTitle>
                       <CardDescription className="flex items-center gap-1 mt-1">
                         <Briefcase className="h-3 w-3" />
-                        {internship.company} • Posted by {internship.teacher_name}
+                        {internship.company} • Posted by {internship.teacher.first_name}
                       </CardDescription>
                     </div>
                     <Badge variant={internship.location === "Remote" ? "outline" : "secondary"}>
@@ -247,7 +251,7 @@ export default function InternshipsPage() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span>{internship.duration}</span>
+                      <span>{internship.duration_weeks} weeks</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -260,12 +264,12 @@ export default function InternshipsPage() {
                   </div>
                 </CardContent>
                 <CardFooter className="flex justify-between">
-               
-
-      <Link href={`/dashboard/internships/${internship.id}`}>
-  <Button variant="outline">View Details</Button> 
-      </Link>
-
+                  <Button
+                    variant="outline"
+                    onClick={() => (window.location.href = `/dashboard/internships/${internship.id}`)}
+                  >
+                    View Details
+                  </Button>
                   <Button onClick={() => handleApply(internship.id)}>Apply Now</Button>
                 </CardFooter>
               </Card>
@@ -276,3 +280,5 @@ export default function InternshipsPage() {
     </div>
   )
 }
+
+

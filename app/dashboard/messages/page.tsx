@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect, useRef } from "react"
@@ -12,9 +11,10 @@ import { useToast } from "@/components/ui/use-toast"
 import ChatService from "@/services/chat-service"
 import websocketService from "@/services/websocket-service"
 import AuthService from "@/services/auth-service"
-import {ChatWithTeacher}  from "@/components/chat-with-teacher"
+import { ChatWithTeacher } from "@/components/chat-with-teacher"
 import { ChatbotDialog } from "@/components/chatbot-dialog"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { UserAvatar } from "@/components/user-avatar"
 
 interface ChatRoom {
   id: number
@@ -24,6 +24,7 @@ interface ChatRoom {
   created_at: string
   last_message?: string
   unread_count?: number
+  user_id : number
 }
 
 interface Message {
@@ -50,6 +51,8 @@ export default function MessagesPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const { toast } = useToast()
+  
+
 
   // Fetch user info and chat rooms
   const fetchChatRooms = async () => {
@@ -237,8 +240,7 @@ export default function MessagesPage() {
     }
   }
 
-  
-  const filteredChatRooms = chatRooms  //.filter((room) => room.name?.toLowerCase().includes(searchTerm.toLowerCase()))
+  const filteredChatRooms = chatRooms
 
   if (isLoading) {
     return (
@@ -257,13 +259,14 @@ export default function MessagesPage() {
           <p className="text-muted-foreground">Chat with students and teachers</p>
         </div>
         <div className="flex gap-2">
-          <ChatWithTeacher onChatCreated={fetchChatRooms} userType={userType || "student"} />
-          <ChatbotDialog />
+      
+        <ChatWithTeacher onChatCreated={fetchChatRooms} userType={userType || "student"} />
+  <ChatbotDialog />
         </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Chat List */ }
+        {/* Chat List */}
         <div className="w-full md:w-80 border-r flex flex-col">
           <div className="p-4">
             <div className="relative">
@@ -288,9 +291,8 @@ export default function MessagesPage() {
               </TabsTrigger>
             </TabsList>
             <TabsContent value="all" className="mt-0">
-            <ScrollArea className="h-[calc(100vh-12rem)] custom-scrollbar">
+              <ScrollArea className="h-[calc(100vh-12rem)] flex-1 p-4 custom-scrollbar">
                 <div className="space-y-2 p-2">
-                  
                   {filteredChatRooms.length === 0 ? (
                     <div className="text-center py-4 text-muted-foreground">
                       No conversations found.
@@ -300,6 +302,7 @@ export default function MessagesPage() {
                     </div>
                   ) : (
                     filteredChatRooms.map((room) => (
+                      
                       <div
                         key={room.id}
                         className={`flex items-center gap-3 rounded-lg p-3 cursor-pointer transition-colors ${
@@ -307,18 +310,14 @@ export default function MessagesPage() {
                         }`}
                         onClick={() => setSelectedRoom(room.id)}
                       >
-                        <Avatar>
-                          <AvatarImage src="/placeholder.svg" />
-                          <AvatarFallback>
-                            {room.name
-                              ?.split(" ")
-                              .map((n) => n[0])
-                              .join("") || "U"}
-                          </AvatarFallback>
-                        </Avatar>
+                        <UserAvatar
+                          userId={room.user_id}
+                          firstName={room.name?.split(" ")[0] || ""}
+                          lastName={room.name?.split(" ")[1] || ""}
+                        />
                         <div className="flex-1 overflow-hidden">
                           <div className="flex items-center justify-between">
-                            <h3 className="font-medium truncate">{room.teacher_id} </h3>
+                            <h3 className="font-medium truncate">{room.name}</h3>
                             <span className="text-xs text-muted-foreground">
                               {new Date(room.created_at).toLocaleDateString()}
                             </span>
@@ -327,13 +326,11 @@ export default function MessagesPage() {
                             <p className="text-sm text-muted-foreground truncate">
                               {room.last_message || "No messages yet"}
                             </p>
-                            {
-       room.unread_count && room.unread_count > 0 && (
-    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
-      {room.unread_count}
-    </span>
-  )
-}
+                            {room.unread_count && room.unread_count > 0 && (
+                              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+                                {room.unread_count}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -344,7 +341,7 @@ export default function MessagesPage() {
             </TabsContent>
             <TabsContent value="unread" className="mt-0">
               <ScrollArea className="h-[calc(100vh-12rem)] custom-scrollbar">
-                <div className="space-y-2 p-2">
+                <div className="space-y-2 p-2 ">
                   {filteredChatRooms.filter((room) => (room.unread_count || 0) > 0).length === 0 ? (
                     <div className="text-center py-4 text-muted-foreground">No unread messages</div>
                   ) : (
@@ -358,18 +355,14 @@ export default function MessagesPage() {
                           }`}
                           onClick={() => setSelectedRoom(room.id)}
                         >
-                          <Avatar>
-                            <AvatarImage src="/placeholder.svg" />
-                            <AvatarFallback>
-                              {room.name
-                                ?.split(" ")
-                                .map((n) => n[0])
-                                .join("") || "U"}
-                            </AvatarFallback>
-                          </Avatar>
+                          <UserAvatar
+                            userId={room.user_id}
+                            firstName={room.name?.split(" ")[0] || ""}
+                            lastName={room.name?.split(" ")[1] || ""}
+                          />
                           <div className="flex-1 overflow-hidden">
                             <div className="flex items-center justify-between">
-                              <h3 className="font-medium truncate">{room.name} </h3>
+                              <h3 className="font-medium truncate">{room.name}</h3>
                               <span className="text-xs text-muted-foreground">
                                 {new Date(room.created_at).toLocaleDateString()}
                               </span>
@@ -380,7 +373,7 @@ export default function MessagesPage() {
                               </p>
                               {room.unread_count && room.unread_count > 0 && (
                                 <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
-                                  {room.unread_count} 
+                                  {room.unread_count}
                                 </span>
                               )}
                             </div>
@@ -395,22 +388,21 @@ export default function MessagesPage() {
         </div>
 
         {/* Chat Area */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 overflow-y-auto px-4 py-2 space-y-2">
           {selectedRoom ? (
             <>
               {/* Chat Header */}
               <div className="p-4 border-b flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <Avatar>
-                    <AvatarImage src="/placeholder.svg" />
-                    <AvatarFallback>
-                      {chatRooms
-                        .find((r) => r.id === selectedRoom)
-                        ?.name?.split(" ")
-                        .map((n) => n[0])
-                        .join("") || "U"}
-                    </AvatarFallback>
-                  </Avatar>
+                
+                  <UserAvatar
+                  
+                    userId={ chatRooms.find((r) => r.id === selectedRoom)?.user_id || 0}
+                    
+                    firstName={chatRooms.find((r) => r.id === selectedRoom)?.name?.split(" ")[0] || ""}
+                    lastName={chatRooms.find((r) => r.id === selectedRoom)?.name?.split(" ")[1] || ""}
+                    className="h-8 w-8"
+                  />
                   <div>
                     <h3 className="font-medium">{chatRooms.find((r) => r.id === selectedRoom)?.name}</h3>
                     <p className="text-xs text-muted-foreground">{userType === "student" ? "Teacher" : "Student"}</p>
@@ -433,7 +425,7 @@ export default function MessagesPage() {
 
               {/* Connection Error Alert */}
               {connectionError && (
-                <Alert variant="warning" className="m-2">
+                <Alert variant="warning"  className="m-2">
                   <AlertCircle className="h-4 w-4" />
                   <AlertTitle>Connection Issue</AlertTitle>
                   <AlertDescription>{connectionError}</AlertDescription>
@@ -500,7 +492,6 @@ export default function MessagesPage() {
               <div className="p-4 border-t">
                 <div className="flex gap-2">
                   <Input
-                 
                     placeholder="Type a message..."
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
@@ -533,6 +524,7 @@ export default function MessagesPage() {
         </div>
       </div>
     </div>
+    
+
   )
 }
-

@@ -9,13 +9,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
-import { User, Mail, BookOpen, Calendar, Building, GraduationCap, Award, Loader2, Upload } from "lucide-react"
+import { User, Mail, BookOpen, Calendar, Building, GraduationCap, Award, Loader2 } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
-import AuthService from "@/services/auth-service"
+import AuthService, { type StudentCreate, type TeacherCreate } from "@/services/auth-service"
 import UserService from "@/services/user-service"
+import { ProfileImageUpload } from "@/components/profile-image-upload"
 
 interface UserProfile {
   id: number
@@ -25,6 +25,8 @@ interface UserProfile {
   type: "student" | "teacher"
   department: string
   created_at: string
+  sap_id?: number
+  teacher_id?: number
   roll_no?: string
   graduation_year?: number
   gpa?: number
@@ -37,14 +39,16 @@ export default function ProfilePage() {
   const [isSaving, setIsSaving] = useState(false)
   const [isChangingPassword, setIsChangingPassword] = useState(false)
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
     email: "",
+    first_name: "",
+    last_name: "",
+    password: "",
+    type: "",
     department: "",
-    rollNo: "",
-    graduationYear: "",
+    roll_no: "",
+    graduation_year: "",
     gpa: "",
-    startDate: "",
+    start_date: "",
   })
   const [passwordData, setPasswordData] = useState({
     currentPassword: "",
@@ -57,6 +61,7 @@ export default function ProfilePage() {
     messageNotifications: true,
     marketingEmails: false,
   })
+  const [imageUpdated, setImageUpdated] = useState(false)
 
   const router = useRouter()
   const { toast } = useToast()
@@ -69,14 +74,16 @@ export default function ProfilePage() {
 
         setUserProfile(userInfo)
         setFormData({
-          firstName: userInfo.first_name || "",
-          lastName: userInfo.last_name || "",
           email: userInfo.email || "",
+          first_name: userInfo.first_name || "",
+          last_name: userInfo.last_name || "",
+          password: "", // Initialize empty password
+          type: userInfo.type || "",
           department: userInfo.department || "",
-          rollNo: userInfo.roll_no || "",
-          graduationYear: userInfo.graduation_year?.toString() || "",
+          roll_no: userInfo.roll_no || "",
+          graduation_year: userInfo.graduation_year?.toString() || "",
           gpa: userInfo.gpa?.toString() || "",
-          startDate: userInfo.start_date ? new Date(userInfo.start_date).toISOString().split("T")[0] : "",
+          start_date: userInfo.start_date ? new Date(userInfo.start_date).toISOString().split("T")[0] : "",
         })
       } catch (error) {
         console.error("Error fetching user profile:", error)
@@ -91,7 +98,7 @@ export default function ProfilePage() {
     }
 
     fetchUserProfile()
-  }, [toast])
+  }, [toast, imageUpdated])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -110,38 +117,77 @@ export default function ProfilePage() {
   const handleSaveProfile = async () => {
     if (!userProfile) return
 
+    // Validate required fields
+    if (!formData.email || !formData.first_name || !formData.last_name || !formData.department) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Validate student-specific fields
+    if (userProfile.type === "student") {
+      if (!formData.roll_no || !formData.graduation_year || !formData.gpa) {
+        toast({
+          title: "Missing information",
+          description: "Please fill in all required fields for student profile.",
+          variant: "destructive",
+        })
+        return
+      }
+    }
+
+    // Validate teacher-specific fields
+    if (userProfile.type === "teacher" && !formData.start_date) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in all required fields for teacher profile.",
+        variant: "destructive",
+      })
+      return
+    }
+
     try {
       setIsSaving(true)
 
-      // Prepare data for API
-      const userData = {
-        email: formData.email,
-        first_name: formData.firstName,
-        last_name: formData.lastName,
-        type: userProfile.type,
-        department: formData.department,
-        password: "placeholder", // API requires password field, will be ignored for updates
-      }
-
-      // Add type-specific fields
+      // Prepare data for API based on user type
       if (userProfile.type === "student") {
-        Object.assign(userData, {
-          roll_no: formData.rollNo,
-          graduation_year: Number.parseInt(formData.graduationYear),
-          gpa: Number.parseFloat(formData.gpa),
-        })
-      } else {
-        Object.assign(userData, {
-          start_date: formData.startDate,
-        })
-      }
+        const studentData: StudentCreate = {
+          email: formData.email,
+          first_name: formData.first_name,
+          last_name: formData.last_name,
+          password: formData.password || "", // Use placeholder if not changing
+          type: "student",
+          department: formData.department,
+          roll_no: formData.roll_no,
+          graduation_year: Number(formData.graduation_year),
+          gpa: Number(formData.gpa),
+        }
 
-      await UserService.updateUser(userProfile.id, userData)
+        await UserService.updateUser(userProfile.id, studentData)
+      } else {
+        const teacherData: TeacherCreate = {
+          email: formData.email,
+          first_name: formData.first_name,
+          last_name: formData.last_name,
+          password: formData.password || "current_password_placeholder", // Use placeholder if not changing
+          type: "teacher",
+          department: formData.department,
+          start_date: formData.start_date,
+        }
+
+        await UserService.updateUser(userProfile.id, teacherData)
+      }
 
       toast({
         title: "Profile updated",
         description: "Your profile has been updated successfully.",
       })
+
+      // Reset password field
+      setFormData((prev) => ({ ...prev, password: "" }))
     } catch (error) {
       console.error("Error updating profile:", error)
       toast({
@@ -155,6 +201,15 @@ export default function ProfilePage() {
   }
 
   const handleChangePassword = async () => {
+    if (!passwordData.currentPassword) {
+      toast({
+        title: "Current password required",
+        description: "Please enter your current password.",
+        variant: "destructive",
+      })
+      return
+    }
+
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       toast({
         title: "Passwords don't match",
@@ -164,22 +219,59 @@ export default function ProfilePage() {
       return
     }
 
+    if (passwordData.newPassword.length < 6) {
+      toast({
+        title: "Password too short",
+        description: "New password must be at least 6 characters long.",
+        variant: "destructive",
+      })
+      return
+    }
+
     try {
       setIsChangingPassword(true)
 
-      // Mock API call - replace with actual API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      // Update user with new password
+      if (userProfile) {
+        if (userProfile.type === "student") {
+          const studentData: StudentCreate = {
+            email: formData.email,
+            first_name: formData.first_name,
+            last_name: formData.last_name,
+            password: passwordData.newPassword,
+            type: "student",
+            department: formData.department,
+            roll_no: formData.roll_no,
+            graduation_year: Number(formData.graduation_year),
+            gpa: Number(formData.gpa),
+          }
 
-      toast({
-        title: "Password changed",
-        description: "Your password has been changed successfully.",
-      })
+          await UserService.updateUser(userProfile.id, studentData)
+        } else {
+          const teacherData: TeacherCreate = {
+            email: formData.email,
+            first_name: formData.first_name,
+            last_name: formData.last_name,
+            password: passwordData.newPassword,
+            type: "teacher",
+            department: formData.department,
+            start_date: formData.start_date,
+          }
 
-      setPasswordData({
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-      })
+          await UserService.updateUser(userProfile.id, teacherData)
+        }
+
+        toast({
+          title: "Password changed",
+          description: "Your password has been changed successfully.",
+        })
+
+        setPasswordData({
+          currentPassword: "",
+          newPassword: "",
+          confirmPassword: "",
+        })
+      }
     } catch (error) {
       console.error("Error changing password:", error)
       toast({
@@ -197,6 +289,10 @@ export default function ProfilePage() {
       title: "Notification preferences saved",
       description: "Your notification preferences have been updated.",
     })
+  }
+
+  const handleImageUploaded = () => {
+    setImageUpdated((prev) => !prev)
   }
 
   if (isLoading) {
@@ -241,23 +337,12 @@ export default function ProfilePage() {
                 <CardDescription>View and manage your personal information</CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col items-center space-y-4">
-                <div className="relative">
-                  <Avatar className="h-32 w-32">
-                    <AvatarImage src="/placeholder.svg" alt={`${userProfile.first_name} ${userProfile.last_name}`} />
-                    <AvatarFallback className="text-3xl">
-                      {userProfile.first_name[0]}
-                      {userProfile.last_name[0]}
-                    </AvatarFallback>
-                  </Avatar>
-                  <Button
-                    size="icon"
-                    variant="outline"
-                    className="absolute bottom-0 right-0 rounded-full bg-background h-8 w-8"
-                  >
-                    <Upload className="h-4 w-4" />
-                    <span className="sr-only">Upload avatar</span>
-                  </Button>
-                </div>
+                <ProfileImageUpload
+                  userId={userProfile.id}
+                  firstName={userProfile.first_name}
+                  lastName={userProfile.last_name}
+                  onImageUploaded={handleImageUploaded}
+                />
                 <div className="text-center">
                   <h3 className="text-xl font-bold">
                     {userProfile.first_name} {userProfile.last_name}
@@ -336,23 +421,21 @@ export default function ProfilePage() {
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="firstName">First Name</Label>
+                    <Label htmlFor="first_name">First Name</Label>
                     <Input
-                      id="firstName"
-                      name="firstName"
-                      value={formData.firstName}
-                     
-                     
+                      id="first_name"
+                      name="first_name"
+                      value={formData.first_name}
                       onChange={handleInputChange}
                       required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="lastName">Last Name</Label>
+                    <Label htmlFor="last_name">Last Name</Label>
                     <Input
-                      id="lastName"
-                      name="lastName"
-                      value={formData.lastName}
+                      id="last_name"
+                      name="last_name"
+                      value={formData.last_name}
                       onChange={handleInputChange}
                       required
                     />
@@ -382,17 +465,23 @@ export default function ProfilePage() {
                 {userProfile.type === "student" ? (
                   <>
                     <div className="space-y-2">
-                      <Label htmlFor="rollNo">Roll Number</Label>
-                      <Input id="rollNo" name="rollNo" value={formData.rollNo} onChange={handleInputChange} required />
+                      <Label htmlFor="roll_no">Roll Number</Label>
+                      <Input
+                        id="roll_no"
+                        name="roll_no"
+                        value={formData.roll_no}
+                        onChange={handleInputChange}
+                        required
+                      />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="graduationYear">Graduation Year</Label>
+                        <Label htmlFor="graduation_year">Graduation Year</Label>
                         <Input
-                          id="graduationYear"
-                          name="graduationYear"
+                          id="graduation_year"
+                          name="graduation_year"
                           type="number"
-                          value={formData.graduationYear}
+                          value={formData.graduation_year}
                           onChange={handleInputChange}
                           required
                         />
@@ -415,17 +504,30 @@ export default function ProfilePage() {
                   </>
                 ) : (
                   <div className="space-y-2">
-                    <Label htmlFor="startDate">Start Date</Label>
+                    <Label htmlFor="start_date">Start Date</Label>
                     <Input
-                      id="startDate"
-                      name="startDate"
+                      id="start_date"
+                      name="start_date"
                       type="date"
-                      value={formData.startDate}
+                      value={formData.start_date}
                       onChange={handleInputChange}
                       required
                     />
                   </div>
                 )}
+                <div className="space-y-2">
+                  <Label htmlFor="password">
+                    Password <span className="text-sm text-muted-foreground">(leave blank to keep current)</span>
+                  </Label>
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    placeholder="Enter new password to change"
+                  />
+                </div>
               </CardContent>
               <CardFooter className="flex justify-end">
                 <Button onClick={handleSaveProfile} disabled={isSaving}>

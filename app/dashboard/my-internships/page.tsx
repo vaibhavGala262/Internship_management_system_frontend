@@ -130,7 +130,7 @@ export default function MyInternshipsPage() {
               <CardFooter className="border-t pt-4">
                 <div className="flex gap-2 w-full">
                   <Button variant="outline" className="flex-1" asChild>
-                    <Link href={`/dashboard/internships/${internship.id}`}>View Details</Link>
+                    <Link href={`/dashboard/my-internships/${internship.id}`}>View Details</Link>
                   </Button>
                   <Button className="flex-1" asChild>
                     <Link href={`/dashboard/applications?internship=${internship.id}`}>View Applications</Link>

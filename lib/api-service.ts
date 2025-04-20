@@ -25,7 +25,7 @@ const getAuthToken = () => {
 // Helper function for API requests
 const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   const token = localStorage.getItem("token");
-
+  console.log(endpoint)
   // If body is FormData, skip setting Content-Type (browser will handle it)
   const isFormData = options.body instanceof FormData;
 

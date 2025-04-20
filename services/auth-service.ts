@@ -5,18 +5,29 @@ export interface LoginCredentials {
   password: string
 }
 
-export interface RegisterData {
+export interface UserBase {
   email: string
   password: string
   first_name: string
   last_name: string
   type: string
-  department: string
-  roll_no?: string
-  graduation_year?: number
-  gpa?: number
-  start_date?: string
 }
+
+export interface StudentCreate extends UserBase {
+  type: "student"
+  department: string
+  roll_no: string
+  graduation_year: number
+  gpa: number
+}
+
+export interface TeacherCreate extends UserBase {
+  type: "teacher"
+  department: string
+  start_date: string
+}
+
+export type RegisterData = StudentCreate | TeacherCreate
 
 const AuthService = {
   login: async (credentials: LoginCredentials) => {
@@ -33,9 +44,8 @@ const AuthService = {
       const errorData = await response.json()
       throw new Error(errorData.detail || "Login failed")
     }
-    
-    return   await response.json()
-    
+
+    return await response.json()
   },
 
   register: async (userData: RegisterData) => {
@@ -56,3 +66,4 @@ const AuthService = {
 }
 
 export default AuthService
+

@@ -38,7 +38,8 @@ const InternshipService = {
   },
 
   getInternshipById: async (id: number) => {
-    return await apiRequest(`/internships/${id}`)
+    console.log(id)
+    return await apiRequest(`/my-internships/${id}`)
   },
 
   getTeacherInternships: async (teacherId: number) => {

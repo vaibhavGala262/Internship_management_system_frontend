@@ -4,10 +4,10 @@ import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Search, Loader2, UserPlus } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import ChatService from "@/services/chat-service"
+import { UserAvatar } from "@/components/user-avatar"
 
 interface Teacher {
   id: number
@@ -48,7 +48,8 @@ export function ChatWithTeacher({ onChatCreated, userType }: { onChatCreated: ()
   const handleCreateChat = async (teacherId: number) => {
     try {
       setIsCreatingChat(teacherId)
-      await ChatService.createChatRoom(teacherId)
+      console.log(teacherId)
+      await ChatService.createChatRoom( teacherId )
       toast({
         title: "Success",
         description: "Chat room created successfully.",
@@ -72,7 +73,7 @@ export function ChatWithTeacher({ onChatCreated, userType }: { onChatCreated: ()
       <DialogTrigger asChild>
         <Button variant="outline" className="gap-2">
           <UserPlus className="h-4 w-4" />
-          {userType === "teacher" ?   "Chat with Students" :"Chat with Teacher"}
+          {userType === "teacher" ? "Chat with Colleague" : "Chat with Teacher"}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
@@ -106,12 +107,7 @@ export function ChatWithTeacher({ onChatCreated, userType }: { onChatCreated: ()
                   className="flex items-center justify-between p-3 rounded-md border hover:bg-accent"
                 >
                   <div className="flex items-center gap-3">
-                    <Avatar>
-                      <AvatarFallback>
-                        {teacher.first_name[0]}
-                        {teacher.last_name[0]}
-                      </AvatarFallback>
-                    </Avatar>
+                    <UserAvatar userId={teacher.id} firstName={teacher.first_name} lastName={teacher.last_name} />
                     <div>
                       <p className="font-medium">
                         {teacher.first_name} {teacher.last_name}
@@ -121,8 +117,8 @@ export function ChatWithTeacher({ onChatCreated, userType }: { onChatCreated: ()
                   </div>
                   <Button
                     size="sm"
-                    onClick={() => handleCreateChat(teacher.teacher_id)}
-                    disabled={isCreatingChat === teacher.teacher_id}
+                    onClick={() => handleCreateChat(teacher.id)}
+                    disabled={isCreatingChat === teacher.id}
                   >
                     {isCreatingChat === teacher.teacher_id ? <Loader2 className="h-4 w-4 animate-spin" /> : "Chat"}
                   </Button>

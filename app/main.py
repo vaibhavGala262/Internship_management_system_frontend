@@ -1,12 +1,17 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import os
 
 from app.routers import users, chat
 from app.database import engine
 from app.models import Base
+from app.utils import ensure_upload_dir
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
+
+# Ensure upload directory exists
+ensure_upload_dir()
 
 # Initialize FastAPI app
 app = FastAPI(

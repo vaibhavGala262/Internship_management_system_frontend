@@ -1,5 +1,4 @@
 "use client"
-
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -28,6 +27,15 @@ import {
 } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import InternshipService from "@/services/internship-service"
+
+
+interface EnrolledStudent {
+  id: number
+  enrolled_at: string
+  student: Student
+  internship: Internship
+}
+
 
 interface Internship {
   id: number
@@ -58,14 +66,12 @@ interface Student {
 }
 
 export default function InternshipDetailsPage() {
-  const params = useParams();
-  console.log("Params from useParams:", params)
-
+  const params = useParams()
   const router = useRouter()
   const { toast } = useToast()
   const [internship, setInternship] = useState<Internship | null>(null)
-  const [enrolledStudents, setEnrolledStudents] = useState<Student[]>([])
-  const [filteredStudents, setFilteredStudents] = useState<Student[]>([])
+  const [enrolledStudents, setEnrolledStudents] = useState<EnrolledStudent[]>([])
+  const [filteredStudents, setFilteredStudents] = useState<EnrolledStudent[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [sortBy, setSortBy] = useState("name")
@@ -88,15 +94,14 @@ export default function InternshipDetailsPage() {
     }
 
     const internshipId = Number(params.id)
+    console.log(internshipId)
 
     const fetchInternshipDetails = async () => {
       try {
         setIsLoading(true)
 
         // Fetch internship details
-        console.log(internshipId)
         const internshipData = await InternshipService.getInternshipById(internshipId)
-        
         setInternship(internshipData)
 
         // Fetch enrolled students
@@ -127,25 +132,25 @@ export default function InternshipDetailsPage() {
     // Apply search filter
     if (searchTerm) {
       filtered = filtered.filter(
-        (student) =>
-          student.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          student.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          student.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          student.roll_no.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          student.department.toLowerCase().includes(searchTerm.toLowerCase()),
+        (entry) =>
+          entry.student.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          entry.student.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          entry.student.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          entry.student.roll_no.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          entry.student.department.toLowerCase().includes(searchTerm.toLowerCase()),
       )
     }
 
     // Apply sorting
     switch (sortBy) {
       case "name":
-        filtered.sort((a, b) => `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`))
+        filtered.sort((a, b) => `${a.student.first_name} ${a.student.last_name}`.localeCompare(`${b.student.first_name} ${b.student.last_name}`))
         break
       case "gpa-high":
-        filtered.sort((a, b) => b.gpa - a.gpa)
+        filtered.sort((a, b) => b.student.gpa - a.student.gpa)
         break
       case "gpa-low":
-        filtered.sort((a, b) => a.gpa - b.gpa)
+        filtered.sort((a, b) => a.student.gpa - b.student.gpa)
         break
       case "recent":
         filtered.sort((a, b) => new Date(b.enrolled_at).getTime() - new Date(a.enrolled_at).getTime())
@@ -251,11 +256,11 @@ export default function InternshipDetailsPage() {
           <div>
             <h3 className="font-medium mb-2">Required Skills</h3>
             <div className="flex flex-wrap gap-2">
-            {internship.skills_required?.map((skill) => (
-  <Badge key={skill} variant="secondary">
-    {skill}
-  </Badge>
-))}
+              {internship.skills_required.map((skill) => (
+                <Badge key={skill} variant="secondary">
+                  {skill}
+                </Badge>
+              ))}
             </div>
           </div>
         </CardContent>
@@ -319,27 +324,27 @@ export default function InternshipDetailsPage() {
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredStudents.map((student) => (
-                <Card key={student.id} className="overflow-hidden">
+              {filteredStudents.map((entry) => (
+                <Card key={entry.student.id} className="overflow-hidden">
                   <CardHeader className="pb-2">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
                         <Avatar className="h-12 w-12">
-                          <AvatarImage src="/placeholder.svg" alt={`${student.first_name} ${student.last_name}`} />
+                          <AvatarImage src="/placeholder.svg" alt={`${entry.student.first_name} ${entry.student.last_name}`} />
                           <AvatarFallback>
-                            {student.first_name[0]}
-                            {student.last_name[0]}
+                            {entry.student.first_name}
+                            {entry.student.last_name}
                           </AvatarFallback>
                         </Avatar>
                         <div>
                           <CardTitle className="text-lg">
-                            {student.first_name} {student.last_name}
+                            {entry.student.first_name} {entry.student.last_name}
                           </CardTitle>
-                          <CardDescription>{student.department}</CardDescription>
+                          <CardDescription>{entry.student.department}</CardDescription>
                         </div>
                       </div>
                       <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-                        {student.gpa.toFixed(2)} GPA
+                        {entry.student.gpa.toFixed(2)} GPA
                       </Badge>
                     </div>
                   </CardHeader>
@@ -347,19 +352,19 @@ export default function InternshipDetailsPage() {
                     <div className="space-y-2 text-sm">
                       <div className="flex items-center gap-2">
                         <Mail className="h-4 w-4 text-muted-foreground" />
-                        <span>{student.email}</span>
+                        <span>{entry.student.email}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <BookOpen className="h-4 w-4 text-muted-foreground" />
-                        <span>Roll No: {student.roll_no}</span>
+                        <span>Roll No: {entry.student.roll_no}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <GraduationCap className="h-4 w-4 text-muted-foreground" />
-                        <span>Graduation: {student.graduation_year}</span>
+                        <span>Graduation: {entry.student.graduation_year}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span>Enrolled: {new Date(student.enrolled_at).toLocaleDateString()}</span>
+                        <span>Enrolled: {new Date(entry.enrolled_at.replace(/\.(\d{3})\d*/, '.$1')).toString()}</span>
                       </div>
                     </div>
                   </CardContent>
@@ -368,7 +373,7 @@ export default function InternshipDetailsPage() {
                       variant="outline"
                       size="sm"
                       className="flex-1"
-                      onClick={() => handleContactStudent(student.sap_id)}
+                      onClick={() => handleContactStudent(entry.student.sap_id)}
                     >
                       <MessageSquare className="h-4 w-4 mr-2" />
                       Message
@@ -377,7 +382,7 @@ export default function InternshipDetailsPage() {
                       variant="outline"
                       size="sm"
                       className="flex-1"
-                      onClick={() => handleDownloadResume(student.sap_id)}
+                      onClick={() => handleDownloadResume(entry.student.sap_id)}
                     >
                       <Download className="h-4 w-4 mr-2" />
                       Resume
@@ -404,51 +409,51 @@ export default function InternshipDetailsPage() {
             </Card>
           ) : (
             <div className="space-y-4">
-              {filteredStudents.map((student) => (
-                <Card key={student.id}>
+              {filteredStudents.map((entry) => (
+                <Card key={entry.student.id}>
                   <CardContent className="p-4">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div className="flex items-center gap-3">
                         <Avatar>
-                          <AvatarImage src="/placeholder.svg" alt={`${student.first_name} ${student.last_name}`} />
+                          <AvatarImage src="/placeholder.svg" alt={`${entry.student.first_name} ${entry.student.last_name}`} />
                           <AvatarFallback>
-                            {student.first_name[0]}
-                            {student.last_name[0]}
+                            {entry.student.first_name[0]}
+                            {entry.student.last_name[0]}
                           </AvatarFallback>
                         </Avatar>
                         <div>
                           <h3 className="font-medium">
-                            {student.first_name} {student.last_name}
+                            {entry.student.first_name} {entry.student.last_name}
                           </h3>
-                          <p className="text-sm text-muted-foreground">{student.email}</p>
+                          <p className="text-sm text-muted-foreground">{entry.student.email}</p>
                         </div>
                       </div>
 
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                         <div>
                           <p className="font-medium">Department</p>
-                          <p className="text-muted-foreground">{student.department}</p>
+                          <p className="text-muted-foreground">{entry.student.department}</p>
                         </div>
                         <div>
                           <p className="font-medium">Roll No</p>
-                          <p className="text-muted-foreground">{student.roll_no}</p>
+                          <p className="text-muted-foreground">{entry.student.roll_no}</p>
                         </div>
                         <div>
                           <p className="font-medium">GPA</p>
-                          <p className="text-muted-foreground">{student.gpa.toFixed(2)}</p>
+                          <p className="text-muted-foreground">{entry.student.gpa.toFixed(2)}</p>
                         </div>
                         <div>
                           <p className="font-medium">Graduation</p>
-                          <p className="text-muted-foreground">{student.graduation_year}</p>
+                          <p className="text-muted-foreground">{entry.student.graduation_year}</p>
                         </div>
                       </div>
 
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => handleContactStudent(student.sap_id)}>
+                        <Button variant="outline" size="sm" onClick={() => handleContactStudent(entry.student.sap_id)}>
                           <MessageSquare className="h-4 w-4 mr-2" />
                           Message
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleDownloadResume(student.sap_id)}>
+                        <Button variant="outline" size="sm" onClick={() => handleDownloadResume(entry.student.sap_id)}>
                           <FileText className="h-4 w-4 mr-2" />
                           Resume
                         </Button>
