@@ -38,7 +38,7 @@ export default function MyInternshipsPage() {
         console.error("Error fetching internships:", error)
         toast({
           title: "Error",
-          description: "Failed to load your internships. Please try again.",
+          description:"Failed to load your internships. Please try again.",
           variant: "destructive",
         })
       } finally {

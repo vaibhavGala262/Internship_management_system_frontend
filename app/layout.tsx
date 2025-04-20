@@ -9,7 +9,6 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata = {
   title: "Internship Management System",
   description: "A platform for managing internships, enrollments, and communication",
-    generator: 'v0.dev'
 }
 
 export default function RootLayout({
@@ -28,6 +27,3 @@ export default function RootLayout({
     </html>
   )
 }
-
-
-import './globals.css'
