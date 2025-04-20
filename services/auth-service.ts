@@ -45,7 +45,19 @@ const AuthService = {
       throw new Error(errorData.detail || "Login failed")
     }
 
-    return await response.json()
+    const data = await response.json()
+
+
+    const token = data.access_token
+    localStorage.setItem("token", token)
+  
+    // Decode token to get expiry
+    const payload = JSON.parse(atob(token.split(".")[1]))
+    if (payload?.exp) {
+      localStorage.setItem("expiry", (payload.exp * 1000).toString()) // store in ms
+    }
+
+    return data
   },
 
   register: async (userData: RegisterData) => {

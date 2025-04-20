@@ -47,7 +47,7 @@ export default function AboutPage() {
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
-                <Link href="/contact">
+                <Link href="/dashboard/contact-us">
                   <Button size="lg" variant="outline">
                     Contact Us
                   </Button>
@@ -91,7 +91,7 @@ export default function AboutPage() {
               <div className="flex items-center justify-center">
                 <div className="relative h-[400px] w-full overflow-hidden rounded-xl">
                   <Image
-                    src="/placeholder.svg?height=800&width=1200"
+                    src="https://cdn.dribbble.com/userupload/21255756/file/original-57db72510c8c81b3009f328d5c93c4c7.gif"
                     alt="Students collaborating"
                     fill
                     className="object-cover"

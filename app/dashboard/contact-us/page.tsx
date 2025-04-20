@@ -13,14 +13,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { SiteFooter } from "@/components/site-footer"
 import { BookOpen, Mail, Phone, MapPin, Clock, Send, Loader2, CheckCircle } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
+import { showToast } from "@/lib/toast-utils"
+import ContactService, { type ContactFormData } from "@/services/contact-service"
+import { z } from "zod"
+import OfficeMap from "@/components/map"
+
+
+const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+
+// Form validation schema
+const contactFormSchema = z.object({
+  name: z.string().min(2, { message: "Name must be at least 2 characters" }),
+  email: z.string().email({ message: "Please enter a valid email address" }),
+  subject: z.string().min(3, { message: "Subject must be at least 3 characters" }),
+  message: z.string().min(10, { message: "Message must be at least 10 characters" }),
+})
 
 export default function ContactPage() {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ContactFormData>({
     name: "",
     email: "",
     subject: "",
     message: "",
   })
+  const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
   const { toast } = useToast()
@@ -28,35 +44,61 @@ export default function ContactPage() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
+
+    // Clear error when user types
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }))
+    }
   }
 
   const handleSelectChange = (value: string) => {
     setFormData((prev) => ({ ...prev, subject: value }))
+
+    // Clear error when user selects
+    if (errors.subject) {
+      setErrors((prev) => ({ ...prev, subject: "" }))
+    }
+  }
+
+  const validateForm = (): boolean => {
+    try {
+      contactFormSchema.parse(formData)
+      setErrors({})
+      return true
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const newErrors: Record<string, string> = {}
+        error.errors.forEach((err) => {
+          if (err.path[0]) {
+            newErrors[err.path[0] as string] = err.message
+          }
+        })
+        setErrors(newErrors)
+      }
+      return false
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    if (!formData.name || !formData.email || !formData.subject || !formData.message) {
-      toast({
-        title: "Missing information",
-        description: "Please fill in all fields.",
-        variant: "destructive",
-      })
+    console.log("Hello")
+    // Validate form
+    if (!validateForm()) {
+      showToast.warning("Form Validation Error", "Please check the form for errors and try again.")
       return
     }
 
     try {
       setIsSubmitting(true)
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      // Submit form data to backend
+      await ContactService.submitContactForm(formData)
 
       setIsSubmitted(true)
-      toast({
-        title: "Message sent",
-        description: "We've received your message and will get back to you soon.",
-      })
+      showToast.success(
+        "Message Sent Successfully",
+        "Thank you for reaching out! We'll get back to you as soon as possible.",
+      )
 
       // Reset form
       setFormData({
@@ -67,11 +109,7 @@ export default function ContactPage() {
       })
     } catch (error) {
       console.error("Error sending message:", error)
-      toast({
-        title: "Error",
-        description: "Failed to send your message. Please try again.",
-        variant: "destructive",
-      })
+      showToast.error("Failed to Send Message", "There was a problem sending your message. Please try again later.")
     } finally {
       setIsSubmitting(false)
     }
@@ -281,8 +319,10 @@ export default function ContactPage() {
                           placeholder="John Doe"
                           value={formData.name}
                           onChange={handleInputChange}
+                          className={errors.name ? "border-red-500" : ""}
                           required
                         />
+                        {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="email">Email Address</Label>
@@ -293,13 +333,15 @@ export default function ContactPage() {
                           placeholder="john@example.com"
                           value={formData.email}
                           onChange={handleInputChange}
+                          className={errors.email ? "border-red-500" : ""}
                           required
                         />
+                        {errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="subject">Subject</Label>
                         <Select onValueChange={handleSelectChange} value={formData.subject}>
-                          <SelectTrigger>
+                          <SelectTrigger className={errors.subject ? "border-red-500" : ""}>
                             <SelectValue placeholder="Select a subject" />
                           </SelectTrigger>
                           <SelectContent>
@@ -310,6 +352,7 @@ export default function ContactPage() {
                             <SelectItem value="other">Other</SelectItem>
                           </SelectContent>
                         </Select>
+                        {errors.subject && <p className="text-sm text-red-500">{errors.subject}</p>}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="message">Message</Label>
@@ -320,8 +363,10 @@ export default function ContactPage() {
                           rows={5}
                           value={formData.message}
                           onChange={handleInputChange}
+                          className={errors.message ? "border-red-500" : ""}
                           required
                         />
+                        {errors.message && <p className="text-sm text-red-500">{errors.message}</p>}
                       </div>
                       <Button type="submit" className="w-full" disabled={isSubmitting}>
                         {isSubmitting ? (
@@ -346,29 +391,27 @@ export default function ContactPage() {
 
         {/* Map Section */}
         <section className="w-full py-12 md:py-24 lg:py-32 bg-gray-50 dark:bg-gray-800">
-          <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="space-y-2">
-                <h2 className="text-3xl font-bold tracking-tighter">Visit Our Office</h2>
-                <p className="mx-auto max-w-[700px] text-gray-500 md:text-xl dark:text-gray-400">
-                  We're located in the heart of the University District.
-                </p>
-              </div>
-            </div>
-            <div className="mt-8 overflow-hidden rounded-lg border">
-              <div className="aspect-video w-full">
-                {/* Replace with actual map component or iframe in production */}
-                <div className="flex h-full w-full items-center justify-center bg-gray-200 dark:bg-gray-700">
-                  <MapPin className="h-12 w-12 text-gray-400 dark:text-gray-500" />
-                  <span className="ml-2 text-gray-500 dark:text-gray-400">Interactive Map</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+  <div className="container px-4 md:px-6">
+    <div className="flex flex-col items-center justify-center space-y-4 text-center">
+      <div className="space-y-2">
+        <h2 className="text-3xl font-bold tracking-tighter">Visit Our Office</h2>
+        <p className="mx-auto max-w-[700px] text-gray-500 md:text-xl dark:text-gray-400">
+          We're located in the heart of the University District.
+        </p>
+      </div>
+    </div>
+    <div className="mt-8 overflow-hidden rounded-lg border">
+      <div className="aspect-video w-full">
+        <OfficeMap />
+      </div>
+    </div>
+  </div>
+</section>
+
       </main>
 
       <SiteFooter />
     </div>
   )
 }
+

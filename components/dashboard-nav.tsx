@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 import { info } from "console"
+import { toast } from "./ui/use-toast"
 
 interface NavItem {
   title: string
@@ -112,6 +113,12 @@ export function DashboardNav({ userType }: { userType: "student" | "teacher" }) 
     // Clear local storage
     localStorage.removeItem("token")
     localStorage.removeItem("userType")
+
+    toast({
+      title: "Successfully Logged Out",
+      description: "",
+      variant: "default",
+    })
 
     // Redirect to login page
     router.push("/login")

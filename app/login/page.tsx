@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { BookOpen, Loader2 } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import AuthService from "@/services/auth-service"
+import { setupAutoLogout } from "@/lib/autoLogout"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -42,6 +43,9 @@ export default function LoginPage() {
         title: "Login successful",
         description: "Welcome back to InternConnect!",
       })
+
+      setupAutoLogout(router)
+
 
       router.push("/dashboard")
     } catch (error: any) {
