@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams, usePathname, useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -24,6 +24,7 @@ import {
   MessageSquare,
   Download,
   FileText,
+  FileDown,
 } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import InternshipService from "@/services/internship-service"
@@ -68,6 +69,7 @@ interface Student {
 export default function InternshipDetailsPage() {
   const params = useParams()
   const router = useRouter()
+  const pathname = usePathname()
   const { toast } = useToast()
   const [internship, setInternship] = useState<Internship | null>(null)
   const [enrolledStudents, setEnrolledStudents] = useState<EnrolledStudent[]>([])
@@ -76,6 +78,9 @@ export default function InternshipDetailsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [sortBy, setSortBy] = useState("name")
   const [userType, setUserType] = useState<"student" | "teacher" | null>(null)
+  const [isDownloadingExcel, setIsDownloadingExcel] = useState(false)
+
+  const internshipId = pathname ? Number.parseInt(pathname.split("/").pop() || "0") : 0
 
   useEffect(() => {
     // Get user type from local storage
@@ -197,6 +202,26 @@ export default function InternshipDetailsPage() {
     )
   }
 
+  const handleDownloadExcel = async () => {
+    try {
+      setIsDownloadingExcel(true)
+      await InternshipService.downloadEnrolledStudentsExcel(internshipId)
+      toast({
+        title: "Success",
+        description: "Excel file downloaded successfully.",
+      })
+    } catch (error) {
+      console.error("Error downloading Excel:", error)
+      toast({
+        title: "Error",
+        description: "Failed to download Excel file. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsDownloadingExcel(false)
+    }
+  }
+
   return (
     <div className="flex flex-col p-4 md:p-6">
       <Button
@@ -304,11 +329,24 @@ export default function InternshipDetailsPage() {
 
       {/* Students Grid */}
       <Tabs defaultValue="grid" className="w-full">
-        <TabsList className="mb-4">
+      <div className="flex justify-between items-center mb-4">
+        <TabsList>
           <TabsTrigger value="grid">Grid View</TabsTrigger>
           <TabsTrigger value="list">List View</TabsTrigger>
         </TabsList>
 
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleDownloadExcel}
+          disabled={isDownloadingExcel || filteredStudents.length === 0}
+          className="flex items-center gap-2"
+        >
+          {isDownloadingExcel ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+          Download Excel
+        </Button>
+      </div>
+     
         <TabsContent value="grid">
           {filteredStudents.length === 0 ? (
             <Card>

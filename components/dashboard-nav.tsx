@@ -48,18 +48,7 @@ export function DashboardNav({ userType }: { userType: "student" | "teacher" }) 
       icon : User
      
     },
-    {
-      title: "About",
-      href: "/dashboard/about" ,
-      icon :Info
-     
-    },
-    {
-      title: "Contact us",
-      href: "/dashboard/contact-us" ,
-      icon :Contact
-     
-    },
+    
   ]
 
   const teacherNavItems: NavItem[] = [
@@ -92,18 +81,6 @@ export function DashboardNav({ userType }: { userType: "student" | "teacher" }) 
       title: "Profile",
       href: "/dashboard/profile",
       icon: User,
-    },
-    {
-      title: "About",
-      href: "/dashboard/about" ,
-      icon :Info
-     
-    },
-    {
-      title: "Contact us",
-      href: "/dashboard/contact-us" ,
-      icon :Contact
-     
     },
   ]
 

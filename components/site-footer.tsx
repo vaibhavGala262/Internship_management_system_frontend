@@ -21,7 +21,7 @@ export function SiteFooter() {
             <Link href="/terms" className="footer-link">
               Terms
             </Link>
-            <Link href="/contact" className="footer-link">
+            <Link href="/contact-us" className="footer-link">
               Contact
             </Link>
             <Link href="/faq" className="footer-link">

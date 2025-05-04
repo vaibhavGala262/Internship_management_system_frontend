@@ -47,7 +47,7 @@ export default function AboutPage() {
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
-                <Link href="/dashboard/contact-us">
+                <Link href="/contact-us">
                   <Button size="lg" variant="outline">
                     Contact Us
                   </Button>
@@ -282,7 +282,7 @@ export default function AboutPage() {
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
-                <Link href="/contact">
+                <Link href="/contact-us">
                   <Button
                     size="lg"
                     variant="outline"

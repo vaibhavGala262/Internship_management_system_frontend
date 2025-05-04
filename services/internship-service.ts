@@ -67,6 +67,44 @@ const InternshipService = {
   getEnrolledStudents: async (internshipId: number) => {
     return await apiRequest(`/enrolled_students/${internshipId}`)
   },
+
+  downloadEnrolledStudentsExcel: async (internshipId: number) => {
+    const token = localStorage.getItem("token")
+
+    // Use fetch directly to get the binary data
+    const response = await fetch(`http://localhost:9000/download-excel-enrolled-students/${internshipId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error("Failed to download Excel file")
+    }
+
+    // Get the blob from the response
+    const blob = await response.blob()
+
+    // Create a URL for the blob
+    const url = window.URL.createObjectURL(blob)
+
+    // Create a temporary link element
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `enrolled-students-${internshipId}.xlsx`
+
+    // Append to the document
+    document.body.appendChild(a)
+
+    // Trigger the download
+    a.click()
+
+    // Clean up
+    window.URL.revokeObjectURL(url)
+    document.body.removeChild(a)
+
+    return true
+  },
 }
 
 export default InternshipService

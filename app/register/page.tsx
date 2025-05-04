@@ -103,9 +103,10 @@ export default function RegisterPage() {
 
       router.push("/login")
     } catch (error: any) {
+      console.log(error)
       toast({
         title: "Registration failed",
-        description: error.message || "There was an error creating your account. Please try again.",
+        description: error.data.detail,
         variant: "destructive",
       })
     } finally {
